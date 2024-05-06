@@ -2,28 +2,26 @@ package service
 
 import (
 	"context"
-	"regexp"
 	"time"
 
-	"github.com/redis/go-redis/v9"
-
 	pb "customer/api/customer"
-	"customer/api/verifyCode"
-
-	"github.com/go-kratos/kratos/v2/transport/grpc"
+	"customer/internal/data"
 )
 
 type CustomerService struct {
 	pb.UnimplementedCustomerServer
+	cd *data.CustomerData
 }
 
-func NewCustomerService() *CustomerService {
-	return &CustomerService{}
+func NewCustomerService(cd *data.CustomerData) *CustomerService {
+	return &CustomerService{
+		cd: cd,
+	}
 }
 
 func (s *CustomerService) GetVerifyCode(ctx context.Context, req *pb.GetVerifyCodeReq) (*pb.GetVerifyCodeResp, error) {
 	// 验证手机号
-	pattern := `^1[3-9]\d{9}$`
+	/* pattern := `^1[3-9]\d{9}$`
 
 	if !regexp.MustCompile(pattern).MatchString(req.Telephone) {
 		return &pb.GetVerifyCodeResp{
@@ -54,9 +52,17 @@ func (s *CustomerService) GetVerifyCode(ctx context.Context, req *pb.GetVerifyCo
 			Code:    1,
 			Message: "验证码服务调用失败",
 		}, nil
+	} */
+	response, err := data.GetVerifyCode(req.Telephone)
+	if err != nil {
+		return nil, err
+	}
+	err = s.cd.SetVerifyCode(req.Telephone, response, 60)
+	if err != nil {
+		return nil, err
 	}
 	//redis存储验证码
-	options, err := redis.ParseURL("redis://192.168.29.130:6379/1?dial_timeout=5")
+	/* options, err := redis.ParseURL("redis://192.168.29.130:6379/1?dial_timeout=5")
 	if err != nil {
 		return &pb.GetVerifyCodeResp{
 			Code:    1,
@@ -68,13 +74,13 @@ func (s *CustomerService) GetVerifyCode(ctx context.Context, req *pb.GetVerifyCo
 	if status.Err() != nil {
 		return &pb.GetVerifyCodeResp{
 			Code:    1,
-			Message: "验证码存储失败Set",
+			Message: "验证码存储失败Set" + status.Err().Error(),
 		}, nil
-	}
+	} */
 	return &pb.GetVerifyCodeResp{
 		Code:           0,
 		Message:        "验证码发送成功",
-		VerifyCode:     response.Code,
+		VerifyCode:     response,
 		VerifyCodeTime: time.Now().Unix(),
 		VerifyCodeLife: 60,
 	}, nil

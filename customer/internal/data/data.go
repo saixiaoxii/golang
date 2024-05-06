@@ -22,7 +22,7 @@ type Data struct {
 // NewData .
 func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 	//初始化Rdb
-	redisURL := fmt.Sprintf("redis://%s/1?dial_timeout=%d", c.Redis.Addr, 1)
+	redisURL := fmt.Sprintf("redis://%s/1?dial_timeout=%d", c.Redis.Addr, 5)
 	data := &Data{}
 	options, _ := redis.ParseURL(redisURL)
 	data.Rdb = redis.NewClient(options)
@@ -31,5 +31,5 @@ func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
 		_ = data.Rdb.Close()
 		log.NewHelper(logger).Info("closing the data resources")
 	}
-	return &Data{}, cleanup, nil
+	return data, cleanup, nil // 返回已经初始化的 data 实例
 }
